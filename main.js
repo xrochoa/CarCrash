@@ -1,8 +1,10 @@
-var pixelScale = 10;
+var pixelScale = 15;
 
-var gameSpeed = 1,
+var gameSpeed = 0.5,
     gameSpeedSlower = gameSpeed / 2,
     gameSpeedSlowest = gameSpeed / 25;
+
+var gameOver = false;
 
 var lane1 = 36 * pixelScale,
     lane2 = 42 * pixelScale,
@@ -10,9 +12,10 @@ var lane1 = 36 * pixelScale,
 
 var gameInit = false;
 var gravity = -35 * pixelScale;
-var carPedal = 15 * pixelScale;
+var carPedal = 10 * pixelScale;
 
 var enemies;
+var enemySpeed = 300;
 
 var gameWidth = 30 * pixelScale;
 var gameHeight = 60 * pixelScale;

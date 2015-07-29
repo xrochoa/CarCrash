@@ -1,15 +1,15 @@
 var mainState = {
-    preload: function() {
+    preload: function () {
         this.load.image('lv1', 'assets/lv1.png');
         this.load.image('road', 'assets/road.png');
         this.load.image('floor1', 'assets/floor1.png');
-        this.load.image('car', 'assets/car.png');
+        this.load.spritesheet('car', 'assets/car.png', 5, 3, 8);
         this.load.image('enemy', 'assets/enemy.png');
         this.load.image('truck', 'assets/truck.png');
 
     },
 
-    create: function() {
+    create: function () {
         //enable the Arcade Physics system
         this.physics.startSystem(Phaser.Physics.ARCADE);
         cursors = game.input.keyboard.createCursorKeys();
@@ -41,8 +41,14 @@ var mainState = {
 
 
         this.car = this.add.sprite(5 * pixelScale, 36 * pixelScale, 'car');
+        this.car.animations.add('explode', [1, 3, 4, 6, 7, 2], 10, false).killOnComplete = true;
+
+
         this.scaleSprite(this.car);
         game.physics.arcade.enable(this.car);
+
+
+
 
         this.enemies = game.add.group();
         this.enemies.enableBody = true;
@@ -69,10 +75,12 @@ var mainState = {
 
     },
 
-    update: function() {
+    update: function () {
         this.lv1.tilePosition.x -= gameSpeedSlowest;
         this.floor1.tilePosition.x -= gameSpeed;
         this.road.tilePosition.x -= gameSpeedSlower;
+
+
 
         if ((gameInit === false) && (cursors.down.isDown || cursors.up.isDown || game.input.activePointer.isDown)) {
             this.gameStart();
@@ -110,73 +118,75 @@ var mainState = {
 
 
         if (Phaser.Rectangle.intersects(this.car.getBounds(), this.truck1.getBounds())) {
-            this.truck1.body.velocity.x = 300;
+            this.truck1.body.velocity.x = enemySpeed;
             this.car.kill();
 
 
         }
         if (Phaser.Rectangle.intersects(this.car.getBounds(), this.truck2.getBounds())) {
-            this.truck2.body.velocity.x = 300;
+            this.truck2.body.velocity.x = enemySpeed;
             this.car.kill();
 
 
 
         }
 
-        if (Phaser.Rectangle.intersects(this.car.getBounds(), this.enemy1.getBounds()) || Phaser.Rectangle.intersects(this.car.getBounds(), this.enemy2.getBounds())) {
-                this.car.kill();
-
-
-
-            }
-
-
-
-
-
-
-        },
-
-
-        render: function() {
-
-
-        },
-
-        scaleSprite: function(sprite) {
-            sprite.scale.x = pixelScale;
-            sprite.scale.y = pixelScale;
-        },
-
-        gameStart: function() {
-            this.car.body.gravity.x = gravity;
-            this.enemy1.body.velocity.x = -300;
-            this.enemy2.body.velocity.x = -300;
-
-            gameInit = true;
-
+        if ((Phaser.Rectangle.intersects(this.car.getBounds(), this.enemy1.getBounds()) || Phaser.Rectangle.intersects(this.car.getBounds(), this.enemy2.getBounds())) && (gameOver === false)) {
+            this.carExplode();
         }
-    };
-
-    var mainMenu = {
-        preload: function() {
-            this.load.image('mainMenu', 'assets/lv1.png');
-
-
-        },
-        create: function() {
-            this.backgroundImage = this.add.tileSprite(0, 0, 30, 60 * pixelScale, 'mainMenu');
-            this.backgroundImage.inputEnabled = true;
-            this.backgroundImage.events.onInputDown.addOnce(this.startGame, this);
 
 
 
-        },
-        update: function() {
 
-        },
-        startGame: function() {
-            this.state.start('main');
-        }
+
+
+    },
+
+
+    render: function () {
+
+
+    },
+
+    carExplode: function () {
+        this.car.animations.play('explode');
+        gameOver = true;
+    },
+
+    scaleSprite: function (sprite) {
+        sprite.scale.x = pixelScale;
+        sprite.scale.y = pixelScale;
+    },
+
+    gameStart: function () {
+        this.car.body.gravity.x = gravity;
+        this.enemy1.body.velocity.x = -enemySpeed;
+        this.enemy2.body.velocity.x = -enemySpeed;
+
+        gameInit = true;
 
     }
+};
+
+var mainMenu = {
+    preload: function () {
+        this.load.image('mainMenu', 'assets/lv1.png');
+
+
+    },
+    create: function () {
+        this.backgroundImage = this.add.tileSprite(0, 0, 30, 60 * pixelScale, 'mainMenu');
+        this.backgroundImage.inputEnabled = true;
+        this.backgroundImage.events.onInputDown.addOnce(this.startGame, this);
+
+
+
+    },
+    update: function () {
+
+    },
+    startGame: function () {
+        this.state.start('main');
+    }
+
+}
