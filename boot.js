@@ -4,7 +4,7 @@ var mainState = {
         this.load.image('road', 'assets/road.png');
         this.load.image('floor1', 'assets/floor1.png');
         this.load.spritesheet('car', 'assets/car.png', 5, 3, 8);
-        this.load.image('enemy', 'assets/enemy.png');
+        this.load.spritesheet('enemy', 'assets/car.png', 5, 3, 8);
         this.load.image('truck', 'assets/truck.png');
 
     },
@@ -12,6 +12,7 @@ var mainState = {
     create: function () {
         //enable the Arcade Physics system
         this.physics.startSystem(Phaser.Physics.ARCADE);
+        //enable key up, down, etc
         cursors = game.input.keyboard.createCursorKeys();
 
 
@@ -28,16 +29,17 @@ var mainState = {
         this.road = this.add.tileSprite(0, 34 * pixelScale, 30, 13, 'road');
         this.scaleSprite(this.road);
 
-        this.truck1 = this.add.sprite(-9 * pixelScale, lane1, 'truck');
-        this.scaleSprite(this.truck1);
-        game.physics.arcade.enable(this.truck1);
+
+        this.trucks = this.add.group();
+        this.trucks.enableBody = true;
+        //adds physics to each member
+        this.physics.arcade.enable(this.trucks);
 
 
-        this.truck2 = this.add.sprite(-9 * pixelScale, lane2, 'truck');
-        this.scaleSprite(this.truck2);
-        game.physics.arcade.enable(this.truck2);
-
-
+        for (var i = 0; i < 2; i++) {
+            this.truck = this.trucks.create(-9 * pixelScale, lanes[i], 'truck');
+            this.scaleSprite(this.truck);
+        }
 
 
         this.car = this.add.sprite(5 * pixelScale, 36 * pixelScale, 'car');
@@ -45,27 +47,25 @@ var mainState = {
 
 
         this.scaleSprite(this.car);
-        game.physics.arcade.enable(this.car);
+        this.physics.arcade.enable(this.car);
 
 
 
 
-        this.enemies = game.add.group();
+        this.enemies = this.add.group();
         this.enemies.enableBody = true;
+        //adds physics to each member
+        this.physics.arcade.enable(this.enemies);
+
+        for (var i = 0; i < 2; i++) {
+            this.enemy = this.enemies.create(30 * pixelScale * (1 + i), lanes[i], 'enemy');
+            this.enemy.animations.add('explodeRed', [1, 3, 4, 6, 7, 2], 10, false).killOnComplete = true;
+            this.scaleSprite(this.enemy);
+
+        }
 
 
-        this.enemy1 = this.enemies.create(30 * pixelScale, lane1, 'enemy');
-        this.scaleSprite(this.enemy1);
-        game.physics.arcade.enable(this.enemy1);
-
-
-        this.enemy2 = this.enemies.create(60 * pixelScale, lane2, 'enemy');
-        this.scaleSprite(this.enemy2);
-        game.physics.arcade.enable(this.enemy2);
-
-
-        this.label = game.add.text(100, 100, "Score");
-        this.score = 0;
+        this.label = this.add.text(100, 100, 'score');
 
 
 
@@ -76,64 +76,68 @@ var mainState = {
     },
 
     update: function () {
+        //backckground movement
         this.lv1.tilePosition.x -= gameSpeedSlowest;
         this.floor1.tilePosition.x -= gameSpeed;
         this.road.tilePosition.x -= gameSpeedSlower;
 
 
-
+        //first click game start
         if ((gameInit === false) && (cursors.down.isDown || cursors.up.isDown || game.input.activePointer.isDown)) {
             this.gameStart();
         }
 
-        if ((cursors.down.isDown || (game.input.activePointer.isDown && game.input.activePointer.position.y > middleLane)) && ((this.car.y === lane1) || (this.car.y === lane2))) {
-            this.car.body.velocity.x = carPedal;
+        //car movement with click or mouse
+        if ((cursors.down.isDown || (game.input.activePointer.isDown && game.input.activePointer.position.y > lanes[2])) && ((this.car.y === lanes[0]) || (this.car.y === lanes[1]))) {
+            this.carAccelerates(this.car);
             game.add.tween(this.car).to({
-                y: lane2
+                y: lanes[1]
             }, 300, Phaser.Easing.Sinusoidal.InOut, true, 0);
 
-        } else if ((cursors.up.isDown || (game.input.activePointer.isDown && game.input.activePointer.position.y < middleLane)) && ((this.car.y === lane1) || (this.car.y === lane2))) {
+        } else if ((cursors.up.isDown || (game.input.activePointer.isDown && game.input.activePointer.position.y < lanes[2])) && ((this.car.y === lanes[0]) || (this.car.y === lanes[1]))) {
 
-            this.car.body.velocity.x = carPedal;
+            this.carAccelerates(this.car);
             game.add.tween(this.car).to({
-                y: lane1
+                y: lanes[0]
             }, 300, Phaser.Easing.Sinusoidal.InOut, true, 0);
 
         }
-        if (this.enemy1.x <= -this.enemy1.width) {
-            this.enemy1.y = lane1 + (lane2 - lane1) * game.rnd.integerInRange(0, 1);
-            this.enemy1.x = 60 * pixelScale;
-            this.score++;
-        }
 
-        if (this.enemy2.x <= -this.enemy2.width) {
-            this.enemy2.y = lane1 + (lane2 - lane1) * game.rnd.integerInRange(0, 1);
-
-            this.enemy2.x = 60 * pixelScale;
-            this.score++;
-
-        }
-
-        this.label.text = this.score;
+        //enemy world bound recycle and score
 
 
-        if (Phaser.Rectangle.intersects(this.car.getBounds(), this.truck1.getBounds())) {
-            this.truck1.body.velocity.x = enemySpeed;
-            this.car.kill();
+        this.enemies.forEach(
+            function (enemy) {
+                if (enemy.x <= -5 * pixelScale && (gameOver === false)) {
+                    enemy.y = lanes[0] + (lanes[1] - lanes[0]) * game.rnd.integerInRange(0, 1);
+                    enemy.x = 60 * pixelScale;
+                    score++;
+                }
+            }
+        );
+
+        //temporary score label
+
+        this.label.text = score;
 
 
-        }
-        if (Phaser.Rectangle.intersects(this.car.getBounds(), this.truck2.getBounds())) {
-            this.truck2.body.velocity.x = enemySpeed;
-            this.car.kill();
+        //truck collide action
+        game.physics.arcade.overlap(this.car, this.trucks, this.truckExplode, null, this);
 
 
 
-        }
 
-        if ((Phaser.Rectangle.intersects(this.car.getBounds(), this.enemy1.getBounds()) || Phaser.Rectangle.intersects(this.car.getBounds(), this.enemy2.getBounds())) && (gameOver === false)) {
-            this.carExplode();
-        }
+
+
+        //enemy collide action
+
+        game.physics.arcade.overlap(this.car, this.enemies, this.carExplode, null, this);
+
+        //enemy collide with truck
+
+        if (gameOver === true) {
+            game.physics.arcade.overlap(this.truck, this.enemies, this.enemyExplode, null, this);
+        };
 
 
 
@@ -148,9 +152,27 @@ var mainState = {
 
     },
 
-    carExplode: function () {
-        this.car.animations.play('explode');
-        gameOver = true;
+    truckExplode: function (car, truck) {
+        car.animations.play('explode');
+        this.carAccelerates(this.car);
+        truck.body.velocity.x = enemySpeed;
+        this.gameOver();
+        this.truck = truck;
+        
+        
+
+
+    },
+    //first and second objects are passed in order from overlap
+    carExplode: function (car, enemy) {
+        car.animations.play('explode');
+        enemy.animations.play('explodeRed');
+        this.gameOver();
+    },
+    enemyExplode: function (truck, enemy) {
+        enemy.animations.play('explodeRed');
+        this.carAccelerates(enemy);
+
     },
 
     scaleSprite: function (sprite) {
@@ -160,10 +182,17 @@ var mainState = {
 
     gameStart: function () {
         this.car.body.gravity.x = gravity;
-        this.enemy1.body.velocity.x = -enemySpeed;
-        this.enemy2.body.velocity.x = -enemySpeed;
-
+        //speed for all in group
+        this.enemies.setAll('body.velocity.x', -enemySpeed);
         gameInit = true;
+
+    },
+    gameOver: function () {
+        gameOver = true;
+
+    },
+    carAccelerates: function (sprite) {
+        sprite.body.velocity.x = carPedal;
 
     }
 };
