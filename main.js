@@ -23,6 +23,7 @@ var score = 0;
 
 
 var game = new Phaser.Game(gameWidth, gameHeight, Phaser.CANVAS, 'gameDiv', null, false, false);
-game.state.add('main', mainState);
-game.state.add('mainMenu', mainMenu);
-game.state.start('mainMenu');
+game.state.add('titleIntro', titleIntro);
+game.state.add('carCrash', carCrash);
+game.state.start('titleIntro');
+
