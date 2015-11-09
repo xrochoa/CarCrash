@@ -1,0 +1,32 @@
+{
+  "name": "carcrash",
+  "version": "1.0.0",
+  "description": "Retro javascript game",
+  "main": "main.js",
+  "dependencies": {
+    "phaser": "^2.3.0"
+  },
+  "devDependencies": {
+    "express": "^4.13.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xrochoa/CarCrash.git"
+  },
+  "keywords": [
+    "game",
+    "fridge",
+    "binge",
+    "8bit"
+  ],
+  "author": "Xavier Reyes Ochoa",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/xrochoa/CarCrash/issues"
+  },
+  "homepage": "https://github.com/xrochoa/CarCrash#readme"
+}
