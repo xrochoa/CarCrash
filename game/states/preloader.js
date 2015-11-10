@@ -1,7 +1,10 @@
+var init = require('../init.js');
+
 var Preloader = function(game) {
     this.asset = null;
     this.ready = false;
 };
+
 
 
 
@@ -12,16 +15,17 @@ module.exports = Preloader;
 Preloader.prototype = {
 
     preload: function() {
-        this.asset = this.add.sprite(320, 240, 'preloader');
-        this.asset.anchor.setTo(0.5, 0.5);
+        this.asset = this.add.sprite((init.gameWidth() / 2) - 110, (init.gameHeight() / 2), 'preloader');
+
+        this.fblogo = this.add.tileSprite((init.gameWidth() / 2) - 90, (init.gameHeight() / 2) - 90, 30, 11, 'fblogo');
+        this.fblogo.scale.x = 6;
+        this.fblogo.scale.y = 6;
 
         this.load.onLoadComplete.addOnce(this.onLoadComplete, this);
         this.load.setPreloadSprite(this.asset);
 
         this.load.image('menu', 'assets/menu.png');
         this.load.image('title', 'assets/title.png');
-        this.load.image('fblogo', 'assets/fblogow.png');
-
 
         this.load.image('lv1', 'assets/lv1.png');
         this.load.image('lv2', 'assets/lv2.png');

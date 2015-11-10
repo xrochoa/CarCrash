@@ -91,36 +91,40 @@ var gameHeight = 60 * pixelScale;
 
 var score = 0;*/
 },{"./init.js":1,"./states/boot.js":3,"./states/game.js":4,"./states/menu.js":5,"./states/preloader.js":6}],3:[function(require,module,exports){
-var Boot = function () {};
+var Boot = function() {};
 
 module.exports = Boot;
 
 Boot.prototype = {
 
-  preload: function () {
-    this.load.image('preloader', 'assets/preloader.gif');
-  },
+    preload: function() {
+        this.load.image('preloader', 'assets/preloader.gif');
+        this.load.image('fblogo', 'assets/fblogow.png');
 
-  create: function () {
-    this.game.input.maxPointers = 1;
 
-    if (this.game.device.desktop) {
-      this.game.stage.scale.pageAlignHorizontally = true;
-    } else {
-      this.game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
-      this.game.scale.minWidth =  480;
-      this.game.scale.minHeight = 260;
-      this.game.scale.maxWidth = 640;
-      this.game.scale.maxHeight = 480;
-      this.game.scale.forceLandscape = true;
-      this.game.scale.pageAlignHorizontally = true;
-      this.game.scale.setScreenSize(true);
+    },
+
+    create: function() {
+        this.game.input.maxPointers = 1;
+
+        if (this.game.device.desktop) {
+            this.game.scale.pageAlignHorizontally = true;
+            this.game.scale.pageAlignVertically = true;
+            this.game.scale.refresh();
+        } else {
+            this.game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+            this.game.scale.minWidth = 480;
+            this.game.scale.minHeight = 260;
+            this.game.scale.maxWidth = 640;
+            this.game.scale.maxHeight = 480;
+            this.game.scale.forceLandscape = true;
+            this.game.scale.pageAlignHorizontally = true;
+            this.game.scale.setScreenSize(true);
+        }
+
+        this.game.state.start('Preloader');
     }
-
-    this.game.state.start('Preloader');
-  }
 };
-
 },{}],4:[function(require,module,exports){
 var init = require('../init.js');
 var utils = require('../utils.js');
@@ -434,10 +438,13 @@ Menu.prototype = {
     }
 };
 },{"../init.js":1,"../utils.js":7}],6:[function(require,module,exports){
+var init = require('../init.js');
+
 var Preloader = function(game) {
     this.asset = null;
     this.ready = false;
 };
+
 
 
 
@@ -448,16 +455,17 @@ module.exports = Preloader;
 Preloader.prototype = {
 
     preload: function() {
-        this.asset = this.add.sprite(320, 240, 'preloader');
-        this.asset.anchor.setTo(0.5, 0.5);
+        this.asset = this.add.sprite((init.gameWidth() / 2) - 110, (init.gameHeight() / 2), 'preloader');
+
+        this.fblogo = this.add.tileSprite((init.gameWidth() / 2) - 90, (init.gameHeight() / 2) - 90, 30, 11, 'fblogo');
+        this.fblogo.scale.x = 6;
+        this.fblogo.scale.y = 6;
 
         this.load.onLoadComplete.addOnce(this.onLoadComplete, this);
         this.load.setPreloadSprite(this.asset);
 
         this.load.image('menu', 'assets/menu.png');
         this.load.image('title', 'assets/title.png');
-        this.load.image('fblogo', 'assets/fblogow.png');
-
 
         this.load.image('lv1', 'assets/lv1.png');
         this.load.image('lv2', 'assets/lv2.png');
@@ -493,7 +501,7 @@ Preloader.prototype = {
         this.ready = true;
     }
 };
-},{}],7:[function(require,module,exports){
+},{"../init.js":1}],7:[function(require,module,exports){
 var Utils = {
     fadeOut: function(sprite, frames) {
         game.add.tween(sprite).to({
