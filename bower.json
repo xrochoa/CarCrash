@@ -1,0 +1,20 @@
+{
+  "name": "carcrash",
+  "description": "Retro javascript game",
+  "main": "main.js",
+  "authors": [
+    "Xavier Reyes Ochoa"
+  ],
+  "license": "ISC",
+  "keywords": [
+    "game",
+    "fridge",
+    "binge",
+    "8bit"
+  ],
+  "homepage": "https://github.com/xrochoa/CarCrash",
+  "moduleType": [],
+  "dependencies": {
+    "phaser": "~2.4.4"
+  }
+}

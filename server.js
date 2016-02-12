@@ -1,18 +1,24 @@
-var express = require('express');
+var express1 = require('express');
+var express2 = require('express');
 
-var app = express();
+var srcApp = express1();
+var distApp = express2();
 
-//Serve static files = css, js, etc
-app.use('/', express.static(__dirname + '/'));
-//Send to index with any route
-app.use('/', function(req, res){
-  res.sendFile(__dirname + '/index.html');
+// Serves source code
+var server1 = srcApp.listen(4000, function() {
+    srcApp.use(express1.static(__dirname + '/src'));
+    srcApp.use(express1.static(__dirname + '/bower_components'));
+    srcApp.use('*', function(req, res) {
+        res.sendFile(__dirname + '/src/index.html');
+    });
+    console.log('Source code listening at http://%s:%s', server1.address().address, server1.address().port);
 });
 
-
-var server = app.listen(3000, function () {
-  var host = server.address().address;
-  var port = server.address().port;
-
-  console.log('Example app listening at http://%s:%s', host, port);
+// Serves distribution code
+var server2 = distApp.listen(8000, function() {
+    distApp.use('/', express2.static(__dirname + '/dist'));
+    distApp.use('*', function(req, res) {
+        res.sendFile(__dirname + '/dist/index.html');
+    });
+    console.log('Distribution code listening at http://%s:%s', server2.address().address, server2.address().port);
 });
