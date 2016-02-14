@@ -2,42 +2,54 @@
 
 var Menu = function() {};
 
+//state
+var menuState;
+
+//sprites, audio and events
+var menuBg, title, miniLogo, themeSong, enterKey;
+
+
 Menu.prototype = {
 
     create: function() {
 
+        menuState = this;
+        var add = menuState.add;
+        var game = menuState.game;
+
         //creates menu background
-        this.stage.backgroundColor = 0x323333;
-        this.menu = this.add.tileSprite(0, 0, 30, 60, 'menu');
-        this.scaleSprite(this.menu);
-        this.menu.inputEnabled = true;
+        menuState.stage.backgroundColor = 0x323333;
+        menuBg = add.tileSprite(0, 0, 30, 60, 'menuBg');
+        menuState.scaleSprite(menuBg);
+        menuBg.inputEnabled = true;
 
         //loads and starts song
-        this.themesong = this.game.add.audio('themesong');
-        this.sound.setDecodedCallback(this.themesong, this.startSong, this);
+        themeSong = add.audio('themeSong');
+        menuState.sound.setDecodedCallback(themeSong, menuState.startSong, menuState);
 
         //creates car crash logo
-        this.title = this.add.tileSprite(0, 15 * this.game.init.pixelScale, 30, 5, 'title');
-        this.scaleSprite(this.title);
-        this.title.alpha = 0;
+        title = add.tileSprite(0, 15 * game.init.pixelScale, 30, 5, 'title');
+        menuState.scaleSprite(title);
+        title.alpha = 0;
 
         //creates mini fridgebinge logo
-        this.fblogo = this.add.tileSprite(this.game.init.gameWidth() - 70, this.game.init.gameHeight() - 32, 30, 11, 'fblogo');
-        this.fblogo.scale.x = 2;
-        this.fblogo.scale.y = 2;
+        miniLogo = add.tileSprite(game.init.gameWidth() - 70, game.init.gameHeight() - 32, 30, 11, 'fblogo');
+        miniLogo.scale.x = 2;
+        miniLogo.scale.y = 2;
 
         //creates listener for enter ley
-        this.enterKey = this.game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
+        enterKey = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
 
         //click or enter and start game
-        this.menu.events.onInputDown.addOnce(this.startGame, this);
-        this.enterKey.onDown.add(this.startGame, this);
+        menuBg.events.onInputDown.addOnce(menuState.startGame, menuState);
+        enterKey.onDown.add(menuState.startGame, menuState);
 
     },
 
     update: function() {
+
         //fades title
-        this.game.utils.fadeIn(this.title, 120, this);
+        menuState.game.utils.fadeIn(title, 120, this);
     }
 
 };
@@ -50,12 +62,12 @@ Menu.prototype.scaleSprite = function(sprite) {
 };
 
 Menu.prototype.startGame = function() {
-    this.themesong.stop();
-    this.state.start('Game');
+    themeSong.stop();
+    menuState.state.start('Game');
 };
 
 Menu.prototype.startSong = function() {
-    this.themesong.loopFull(0.5);
+    themeSong.loopFull(0.5);
 };
 
 module.exports = Menu;

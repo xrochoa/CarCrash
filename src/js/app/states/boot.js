@@ -2,32 +2,40 @@
 
 var Boot = function() {};
 
-//'this' is the Boot state that has a reference to game as a property
+//'this' is the Boot state that also has a reference to game as a property this.game (very similar)
 Boot.prototype = {
 
     preload: function() {
-        this.game.load.image('preloader', 'assets/preloader.png');
-        this.game.load.image('fblogo', 'assets/fblogow.png');
+
+        var load = this.load;
+
+        load.image('preloader', 'assets/preloader.png');
+        load.image('fblogo', 'assets/fblogow.png');
     },
 
     create: function() {
-        this.game.input.maxPointers = 1;
 
-        if (this.game.device.desktop) {
-            this.game.scale.pageAlignHorizontally = true;
-            this.game.scale.pageAlignVertically = true;
-            this.game.scale.refresh();
+        var game = this.game;
+        var scale = this.scale;
+        var bootState = this;
+
+        bootState.input.maxPointers = 1;
+
+        if (game.device.desktop) {
+            scale.pageAlignHorizontally = true;
+            scale.pageAlignVertically = true;
+            scale.refresh();
         } else {
-            this.game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
-            this.game.scale.minWidth = 480;
-            this.game.scale.minHeight = 260;
-            this.game.scale.maxWidth = 640;
-            this.game.scale.maxHeight = 480;
-            this.game.scale.forceLandscape = true;
-            this.game.scale.pageAlignHorizontally = true;
+            scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+            scale.minWidth = 480;
+            scale.minHeight = 260;
+            scale.maxWidth = 640;
+            scale.maxHeight = 480;
+            scale.forceLandscape = true;
+            scale.pageAlignHorizontally = true;
         }
 
-        this.game.state.start('Preloader');
+        bootState.state.start('Preloader');
 
     }
 };

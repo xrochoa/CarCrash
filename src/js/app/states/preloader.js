@@ -1,74 +1,78 @@
 'use strict';
 
-var Preloader = function(game) {
-    this.ready = false;
-};
+var Preloader = function() {};
 
 Preloader.prototype = {
 
     preload: function() {
 
+        var preloaderState = this;
+        var load = preloaderState.load;
+
         //set background logo and progress bar
-        this.setProgressLogo();
+        preloaderState.setProgressLogo();
 
+        //LOAD GAME ASSETS
         //menu
-        this.load.image('menu', 'assets/menu.png');
-        this.load.image('title', 'assets/title.png');
+        load.image('menuBg', 'assets/menu.png');
+        load.image('title', 'assets/title.png');
         //color backgrounds
-        this.load.spritesheet('bground', 'assets/backgrounds.png', 30, 60, 4); // size 30x60 and 4 frames
+        load.spritesheet('bground', 'assets/backgrounds.png', 30, 60, 4); // size 30x60 and 4 frames
         //level backgrounds
-        this.load.image('lv1', 'assets/lv1.png');
-        this.load.image('lv2', 'assets/lv2.png');
-        this.load.image('lv3', 'assets/lv3.png');
-        this.load.image('lv4', 'assets/lv4.png');
+        load.image('lv1', 'assets/lv1.png');
+        load.image('lv2', 'assets/lv2.png');
+        load.image('lv3', 'assets/lv3.png');
+        load.image('lv4', 'assets/lv4.png');
         //road
-        this.load.image('road', 'assets/road.png');
+        load.image('road', 'assets/road.png');
         //floor backgrounds
-        this.load.image('floor1', 'assets/floor1.png');
-        this.load.image('floor2', 'assets/floor2.png');
-        this.load.image('floor3', 'assets/floor3.png');
-        this.load.image('floor4', 'assets/floor4.png');
+        load.image('floor1', 'assets/floor1.png');
+        load.image('floor2', 'assets/floor2.png');
+        load.image('floor3', 'assets/floor3.png');
+        load.image('floor4', 'assets/floor4.png');
         //sprites
-        this.load.spritesheet('car', 'assets/car.png', 5, 3, 8);
-        this.load.spritesheet('enemy', 'assets/enemy.png', 5, 3, 8);
-        this.load.image('truck', 'assets/truck.png');
-        this.load.bitmapFont('litto', 'assets/litto.png', 'assets/litto.xml');
-        this.load.image('over', 'assets/over.png');
-        this.load.image('retry', 'assets/retry.png');
+        load.spritesheet('car', 'assets/car.png', 5, 3, 8);
+        load.spritesheet('enemy', 'assets/enemy.png', 5, 3, 8);
+        load.image('truck', 'assets/truck.png');
+        load.bitmapFont('litto', 'assets/litto.png', 'assets/litto.xml');
+        load.image('over', 'assets/over.png');
+        load.image('retry', 'assets/retry.png');
         //sounds
-        this.load.audio('themesong', 'assets/themesong.m4a');
+        load.audio('themeSong', 'assets/themesong.m4a');
         //winner
-        this.load.image('winback', 'assets/winback.png');
-        this.load.image('wintitle', 'assets/wintitle.png');
+        load.image('winback', 'assets/winback.png');
+        load.image('wintitle', 'assets/wintitle.png');
 
-        //call method on load completed
-        this.load.onLoadComplete.addOnce(this.onLoadComplete, this);
+        //COMPLETED LISTENER: call method on load completed
+        load.onLoadComplete.add(preloaderState.onLoadComplete, preloaderState);
 
-
-    },
-
-    update: function() {
-        if (!!this.ready) {
-            this.game.state.start('Menu');
-        }
-    },
+    }
 
 };
 
-//CUSTOM METHODS
+//CUSTOM METHODS (for modularity)
 Preloader.prototype.setProgressLogo = function() {
+    
+    var game = this.game;
+    var load = this.load;
+    var add = this.add;
+
     //place logo and asset
-    this.progress = this.add.sprite((this.game.init.gameWidth() / 2) - 110, (this.game.init.gameHeight() / 2), 'preloader');
-    this.fblogo = this.add.tileSprite((this.game.init.gameWidth() / 2) - 90, (this.game.init.gameHeight() / 2) - 90, 30, 11, 'fblogo');
-    this.fblogo.scale.x = 6;
-    this.fblogo.scale.y = 6;
+    var progressBar = add.sprite((game.init.gameWidth() / 2) - 110, (game.init.gameHeight() / 2), 'preloader');
+    progressBar.cropEnabled = false;
+
+    var fridgeBingeLogo = add.tileSprite((game.init.gameWidth() / 2) - 90, (game.init.gameHeight() / 2) - 90, 30, 11, 'fblogo');
+    fridgeBingeLogo.scale.x = 6;
+    fridgeBingeLogo.scale.y = 6;
+
     //loads progress bar
-    this.progress.cropEnabled = false;
-    this.load.setPreloadSprite(this.progress);
+    load.setPreloadSprite(progressBar);
+
 };
 
 Preloader.prototype.onLoadComplete = function() {
-    this.ready = true;
+    var preloaderState = this;
+    preloaderState.state.start('Menu');
 };
 
 module.exports = Preloader;
