@@ -1,23 +1,26 @@
 'use strict';
 
+//state and shortcuts
+var bootState, game, load, scale;
+
 var Boot = function() {};
 
 //'this' is the Boot state that also has a reference to game as a property this.game (very similar)
 Boot.prototype = {
 
     preload: function() {
-
-        var load = this.load;
+        //variables
+        bootState = this;
+        load = bootState.load;
 
         load.image('preloader', 'assets/preloader.png');
         load.image('fblogo', 'assets/fblogow.png');
     },
 
     create: function() {
-
-        var game = this.game;
-        var scale = this.scale;
-        var bootState = this;
+        //variables
+        game = bootState.game;
+        scale = bootState.scale;
 
         bootState.input.maxPointers = 1;
 

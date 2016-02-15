@@ -1,13 +1,20 @@
 'use strict';
 
+//state and shortcuts
+var preloaderState, game, load, add;
+
+//sprites, audio and events
+var fridgeBingeLogo, progressBar;
+
 var Preloader = function() {};
 
 Preloader.prototype = {
 
     preload: function() {
 
-        var preloaderState = this;
-        var load = preloaderState.load;
+        //variables
+        preloaderState = this;
+        load = preloaderState.load;
 
         //set background logo and progress bar
         preloaderState.setProgressLogo();
@@ -53,17 +60,17 @@ Preloader.prototype = {
 //CUSTOM METHODS (for modularity)
 Preloader.prototype.setProgressLogo = function() {
     
-    var game = this.game;
-    var load = this.load;
-    var add = this.add;
+    //variables
+    game = preloaderState.game;
+    add = preloaderState.add;
 
-    //place logo and asset
-    var progressBar = add.sprite((game.init.gameWidth() / 2) - 110, (game.init.gameHeight() / 2), 'preloader');
-    progressBar.cropEnabled = false;
-
-    var fridgeBingeLogo = add.tileSprite((game.init.gameWidth() / 2) - 90, (game.init.gameHeight() / 2) - 90, 30, 11, 'fblogo');
+    //place logo and progress bar
+    fridgeBingeLogo = add.tileSprite((game.init.gameWidth() / 2) - 90, (game.init.gameHeight() / 2) - 90, 30, 11, 'fblogo');
     fridgeBingeLogo.scale.x = 6;
     fridgeBingeLogo.scale.y = 6;
+
+    progressBar = add.sprite((game.init.gameWidth() / 2) - 110, (game.init.gameHeight() / 2), 'preloader');
+    progressBar.cropEnabled = false;
 
     //loads progress bar
     load.setPreloadSprite(progressBar);
@@ -71,7 +78,6 @@ Preloader.prototype.setProgressLogo = function() {
 };
 
 Preloader.prototype.onLoadComplete = function() {
-    var preloaderState = this;
     preloaderState.state.start('Menu');
 };
 

@@ -2,8 +2,8 @@
 
 var Menu = function() {};
 
-//state
-var menuState;
+//state and shortcuts
+var menuState, game, add;
 
 //sprites, audio and events
 var menuBg, title, miniLogo, themeSong, enterKey;
@@ -13,9 +13,11 @@ Menu.prototype = {
 
     create: function() {
 
+        //variables
         menuState = this;
-        var add = menuState.add;
-        var game = menuState.game;
+        game = menuState.game;
+        add = menuState.add;
+
 
         //creates menu background
         menuState.stage.backgroundColor = 0x323333;

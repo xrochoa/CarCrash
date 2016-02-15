@@ -105,24 +105,27 @@ module.exports = {
 },{}],3:[function(require,module,exports){
 'use strict';
 
+//state and shortcuts
+var bootState, game, load, scale;
+
 var Boot = function() {};
 
 //'this' is the Boot state that also has a reference to game as a property this.game (very similar)
 Boot.prototype = {
 
     preload: function() {
-
-        var load = this.load;
+        //variables
+        bootState = this;
+        load = bootState.load;
 
         load.image('preloader', 'assets/preloader.png');
         load.image('fblogo', 'assets/fblogow.png');
     },
 
     create: function() {
-
-        var game = this.game;
-        var scale = this.scale;
-        var bootState = this;
+        //variables
+        game = bootState.game;
+        scale = bootState.scale;
 
         bootState.input.maxPointers = 1;
 
@@ -149,173 +152,186 @@ module.exports = Boot;
 },{}],4:[function(require,module,exports){
 'use strict';
 
+//state and shortcuts
+var gameState, keyboard, game, add, physics;
+
+//sprites, audio and events
+var cursors, enterKey, background, level, floor, road, truckGroup,
+    truck, player, enemyGroup, enemy, scoreLabel, gameOverLabel,
+    retryButton, themeSong;
+
+//ajax
+var winData, looseData, reloadData;
+
 var Game = function() {};
-var cursors;
-
-module.exports = Game;
-
-
 
 Game.prototype = {
 
     create: function() {
+
+        //variables
+        gameState = this;
+        keyboard = gameState.input.keyboard;
+        game = gameState.game;
+        add = gameState.add;
+        physics = gameState.physics;
+
+
+        console.log(this);
+
         //enable the Arcade Physics system
-        this.physics.startSystem(Phaser.Physics.ARCADE);
+        physics.startSystem(Phaser.Physics.ARCADE);
+
         //enable key up, down, etc
-        cursors = this.game.input.keyboard.createCursorKeys();
-        this.enterKey = this.game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
+        cursors = keyboard.createCursorKeys();
+        enterKey = keyboard.addKey(Phaser.Keyboard.ENTER);
 
-
-        this.game.stage.backgroundColor = 0xff5040;
+        game.stage.backgroundColor = 0xff5040;
 
         //background
-        this.bground = this.add.sprite(0, 0, 'bground');
-        this.scaleSprite(this.bground);
+        background = add.sprite(0, 0, 'bground');
+        gameState.scaleSprite(background);
 
         //level 1
-        this.level = this.add.tileSprite(0, 0, 30, 60 * this.game.init.pixelScale, 'lv1');
-        this.scaleSprite(this.level);
+        level = add.tileSprite(0, 0, 30, 60 * game.init.pixelScale, 'lv1');
+        gameState.scaleSprite(level);
 
         //floor1
-        this.floor = this.add.tileSprite(0, 45 * this.game.init.pixelScale, 30, 15, 'floor1');
-        this.scaleSprite(this.floor);
+        floor = add.tileSprite(0, 45 * game.init.pixelScale, 30, 15, 'floor1');
+        gameState.scaleSprite(floor);
 
         //road
-        this.road = this.add.tileSprite(0, 34 * this.game.init.pixelScale, 30, 13, 'road');
-        this.scaleSprite(this.road);
+        road = add.tileSprite(0, 34 * game.init.pixelScale, 30, 13, 'road');
+        gameState.scaleSprite(road);
 
         //trucks
-        this.trucks = this.add.group();
-        this.trucks.enableBody = true;
+        truckGroup = add.group();
+        truckGroup.enableBody = true;
+
         //adds physics to each member
-        this.physics.arcade.enable(this.trucks);
+        physics.arcade.enable(truckGroup);
         for (var i = 0; i < 2; i++) {
-            this.truck = this.trucks.create(-9 * this.game.init.pixelScale, this.game.init.lanes()[i], 'truck');
-            this.scaleSprite(this.truck);
+            truck = truckGroup.create(-9 * game.init.pixelScale, game.init.lanes()[i], 'truck');
+            gameState.scaleSprite(truck);
         }
 
-        //player
-        this.car = this.add.sprite(5 * this.game.init.pixelScale, 36 * this.game.init.pixelScale, 'car');
-        this.car.animations.add('explode', [1, 2, 3, 4, 5, 6], 10, false).killOnComplete = true;
-        this.scaleSprite(this.car);
-        this.physics.arcade.enable(this.car);
+        //player = blue car
+        player = add.sprite(5 * game.init.pixelScale, 36 * game.init.pixelScale, 'car');
+        player.animations.add('explode', [1, 2, 3, 4, 5, 6], 10, false).killOnComplete = true;
+        gameState.scaleSprite(player);
+        physics.arcade.enable(player);
 
-        //enemies
-        this.enemies = this.add.group();
-        this.enemies.enableBody = true;
+        //enemy = red cars
+        enemyGroup = add.group();
+        enemyGroup.enableBody = true;
+
         //adds physics to each member
-        this.physics.arcade.enable(this.enemies);
+        physics.arcade.enable(enemyGroup);
         for (var i = 0; i < 2; i++) {
-            this.enemy = this.enemies.create(30 * this.game.init.pixelScale * (1 + i), this.game.init.lanes()[i], 'enemy');
-            this.enemy.animations.add('explodeRed', [1, 2, 3, 4, 5, 6], 10, false).killOnComplete = true;
-            this.scaleSprite(this.enemy);
+            enemy = enemyGroup.create(30 * game.init.pixelScale * (1 + i), game.init.lanes()[i], 'enemy');
+            enemy.animations.add('explodeRed', [1, 2, 3, 4, 5, 6], 10, false).killOnComplete = true;
+            gameState.scaleSprite(enemy);
 
         }
 
         //score label
-        this.bitmapTextFont = this.add.bitmapText(0, 5 * this.game.init.pixelScale, 'litto', 0, this.game.init.pixelScale);
+        scoreLabel = add.bitmapText(0, 5 * game.init.pixelScale, 'litto', 0, game.init.pixelScale);
 
 
         //gameover label
-        this.over = this.add.sprite(5 * this.game.init.pixelScale, 15 * this.game.init.pixelScale, 'over');
-        this.scaleSprite(this.over);
-        this.over.alpha = 0;
+        gameOverLabel = add.sprite(5 * game.init.pixelScale, 15 * game.init.pixelScale, 'over');
+        gameState.scaleSprite(gameOverLabel);
+        gameOverLabel.alpha = 0;
 
         //retry button
-        this.retry = this.add.button(9 * this.game.init.pixelScale, 35 * this.game.init.pixelScale, 'retry');
-        this.scaleSprite(this.retry);
-        this.retry.alpha = 0;
+        retryButton = add.button(9 * game.init.pixelScale, 35 * game.init.pixelScale, 'retry');
+        gameState.scaleSprite(retryButton);
+        retryButton.alpha = 0;
 
         //loads and starts song
-        this.themesong = this.game.add.audio('themesong');
-        this.sound.setDecodedCallback(this.themesong, this.startSong, this);
+        themeSong = add.audio('themeSong');
+        gameState.sound.setDecodedCallback(themeSong, gameState.startSong, gameState);
 
 
     },
 
     update: function() {
         //backckground movement
-        this.game.utils.tileAnimation(this.level, this.game.init.gameSpeedSlowest());
-        this.game.utils.tileAnimation(this.floor, this.game.init.gameSpeed);
-        this.game.utils.tileAnimation(this.road, this.game.init.gameSpeedSlower());
+        game.utils.tileAnimation(level, game.init.gameSpeedSlowest());
+        game.utils.tileAnimation(floor, game.init.gameSpeed);
+        game.utils.tileAnimation(road, game.init.gameSpeedSlower());
 
 
         //first click game start
-        if ((this.game.init.gameInit === false) && (cursors.down.isDown || cursors.up.isDown || this.game.input.activePointer.isDown)) {
-            this.gameStart();
+        if ((game.init.gameInit === false) && (cursors.down.isDown || cursors.up.isDown || game.input.activePointer.isDown)) {
+            gameState.gameStart();
         }
+
         //when level changes
-        if (this.game.init.nextLevel[this.game.init.levelIndex] === this.game.init.score) {
+        if (game.init.nextLevel[game.init.levelIndex] === game.init.score) {
             //fadeOut animation
-            this.bground.frame = this.game.init.levelIndex + 1;
-            this.game.utils.fadeOut(this.level, 0, this);
-            this.game.utils.fadeOut(this.floor, 0, this);
-            this.game.init.levelIndex++;
+            background.frame = game.init.levelIndex + 1;
+            game.utils.fadeOut(level, 0, gameState);
+            game.utils.fadeOut(floor, 0, gameState);
+            game.init.levelIndex++;
             //fadeIn animation
-            this.game.time.events.add(Phaser.Timer.SECOND * 1, this.fadeInNewLevel, this);
+            game.time.events.add(Phaser.Timer.SECOND * 1, gameState.fadeInNewLevel, gameState);
         }
-
-
-
-
 
         //game win
-        if (this.game.init.score === this.game.init.win) {
-            var gameAjaxData = {
-                game: this.game.init.gameId,
+        if (game.init.score === game.init.win) {
+            winData = {
+                game: game.init.gameId,
                 wins: 1
             };
 
-            this.ajaxPut(gameAjaxData, '/api/stats');
+            gameState.ajaxPut(winData, '/api/stats');
 
-            this.themesong.stop();
-            this.game.state.start('Win');
-
+            themeSong.stop();
+            gameState.state.start('Win');
 
         }
 
         //triggers game over
-        if (this.game.init.gameOver === true && this.game.init.ajax === true) {
-            this.themesong.stop();
-            this.gameOver();
+        if (game.init.gameOver === true && game.init.ajax === true) {
+            themeSong.stop();
+            gameState.gameOver();
         };
 
         //car movement with click or mouse
-        if ((cursors.up.isDown || (this.game.input.activePointer.isDown && this.game.input.activePointer.position.y < this.game.init.lanes()[2])) && ((this.car.y === this.game.init.lanes()[0]) || (this.car.y === this.game.init.lanes()[1]))) {
-            this.carMoveUp();
+        if ((cursors.up.isDown || (game.input.activePointer.isDown && game.input.activePointer.position.y < game.init.lanes()[2])) && ((player.y === game.init.lanes()[0]) || (player.y === game.init.lanes()[1]))) {
+            gameState.carMoveUp();
         } else if (
-            (cursors.down.isDown || (this.game.input.activePointer.isDown && this.game.input.activePointer.position.y > this.game.init.lanes()[2])) && ((this.car.y === this.game.init.lanes()[0]) || (this.car.y === this.game.init.lanes()[1]))) {
-            this.carMoveDown();
+            (cursors.down.isDown || (game.input.activePointer.isDown && game.input.activePointer.position.y > game.init.lanes()[2])) && ((player.y === game.init.lanes()[0]) || (player.y === game.init.lanes()[1]))) {
+            gameState.carMoveDown();
         }
-        var self = this;
 
         //enemy world bound recycle and score
-        this.enemies.forEach(
+        enemyGroup.forEach(
 
 
             function(enemy) {
-                if (enemy.x <= -5 * self.game.init.pixelScale && (self.game.init.gameOver === false)) {
-                    enemy.y = self.game.init.lanes()[0] + (self.game.init.lanes()[1] - self.game.init.lanes()[0]) * self.game.rnd.integerInRange(0, 1);
-                    enemy.x = 60 * self.game.init.pixelScale;
-                    self.game.init.score++;
+                if (enemy.x <= -5 * game.init.pixelScale && (game.init.gameOver === false)) {
+                    enemy.y = game.init.lanes()[0] + (game.init.lanes()[1] - game.init.lanes()[0]) * game.rnd.integerInRange(0, 1);
+                    enemy.x = 60 * game.init.pixelScale;
+                    game.init.score++;
                 }
             }
         );
 
         //temporary score label
-        this.bitmapTextFont.text = this.game.init.score;
-        this.bitmapTextFont.x = ((30 * this.game.init.pixelScale) - this.bitmapTextFont.width) / 2;
+        scoreLabel.text = game.init.score;
+        scoreLabel.x = ((30 * game.init.pixelScale) - scoreLabel.width) / 2;
 
-        //- this.bitmapTextFont.width(game.world.centerX )
 
         //truck collide action
-        this.game.physics.arcade.overlap(this.car, this.trucks, this.truckExplode, null, this);
+        physics.arcade.overlap(player, truckGroup, gameState.truckExplode, null, gameState);
 
         //enemy collide action
-        this.game.physics.arcade.overlap(this.car, this.enemies, this.carExplode, null, this);
+        physics.arcade.overlap(player, enemyGroup, gameState.carExplode, null, gameState);
 
         //enemy collide with truck
-        this.game.physics.arcade.overlap(this.truck, this.enemies, this.enemyExplode, null, this);
+        physics.arcade.overlap(truck, enemyGroup, gameState.enemyExplode, null, gameState);
 
     },
 
@@ -325,38 +341,38 @@ Game.prototype = {
     },
 
     carMoveUp: function() {
-        this.carAccelerates(this.car);
-        this.game.add.tween(this.car).to({
-            y: this.game.init.lanes()[0]
+        gameState.carAccelerates(player);
+        add.tween(player).to({
+            y: game.init.lanes()[0]
         }, 300, Phaser.Easing.Sinusoidal.InOut, true, 0);
     },
     carMoveDown: function() {
-        this.carAccelerates(this.car);
-        this.game.add.tween(this.car).to({
-            y: this.game.init.lanes()[1]
+        gameState.carAccelerates(player);
+        add.tween(player).to({
+            y: game.init.lanes()[1]
         }, 300, Phaser.Easing.Sinusoidal.InOut, true, 0);
     },
 
     //first and second objects are passed in order from overlap
-    carExplode: function(car, enemy) {
-        car.animations.play('explode');
+    carExplode: function(player, enemy) {
+        player.animations.play('explode');
         enemy.animations.play('explodeRed');
-        this.game.init.gameOver = true;
+        game.init.gameOver = true;
     },
 
-    truckExplode: function(car, truck) {
-        this.carAccelerates(this.car);
-        car.animations.play('explode');
-        truck.body.velocity.x = this.game.init.enemySpeed;
-        this.game.init.gameOver = true;
+    truckExplode: function(player, truck) {
+        gameState.carAccelerates(player);
+        player.animations.play('explode');
+        truck.body.velocity.x = game.init.enemySpeed;
+        game.init.gameOver = true;
 
     },
 
     enemyExplode: function(truck, enemy) {
         //only destroys if truck is moving
-        if (truck.body.velocity.x === this.game.init.enemySpeed) {
+        if (truck.body.velocity.x === game.init.enemySpeed) {
             enemy.animations.play('explodeRed');
-            this.carAccelerates(enemy);
+            gameState.carAccelerates(enemy);
         }
     },
 
@@ -366,69 +382,66 @@ Game.prototype = {
     },
 
     gameStart: function() {
-        this.car.body.gravity.x = this.game.init.gravity();
+        player.body.gravity.x = game.init.gravity();
         //speed for all in group
-        this.enemies.setAll('body.velocity.x', -this.game.init.enemySpeed);
-        this.game.init.gameInit = true;
+        enemyGroup.setAll('body.velocity.x', -game.init.enemySpeed);
+        game.init.gameInit = true;
 
     },
 
     gameOver: function() {
         //add highest score
-        if (this.game.init.score > this.game.init.highscore) {
-            this.game.init.highscore = this.game.init.score;
+        if (game.init.score > game.init.highscore) {
+            game.init.highscore = game.init.score;
         }
 
-        var gameAjaxData = {
-            game: this.game.init.gameId,
-            highscore: this.game.init.highscore,
-            level: this.game.init.level
+        var looseData = {
+            game: game.init.gameId,
+            highscore: game.init.highscore,
+            level: game.init.level
         };
 
-        this.ajaxPut(gameAjaxData, '/api/stats');
-        this.ajaxGet('/api/highscores');
+        gameState.ajaxPut(looseData, '/api/stats');
+        gameState.ajaxGet('/api/highscores');
 
-        this.game.utils.fadeOut(this.bground, 0, this);
-        this.game.utils.fadeOut(this.level, 0, this);
-        this.game.utils.fadeOut(this.floor, 0, this);
-        this.game.utils.fadeIn(this.over, 0, this);
-        this.game.utils.fadeIn(this.retry, 0, this);
-        this.game.time.events.add(Phaser.Timer.SECOND * 0.5, this.retryEnableInput, this);
+        game.utils.fadeOut(background, 0, gameState);
+        game.utils.fadeOut(level, 0, gameState);
+        game.utils.fadeOut(floor, 0, gameState);
+        game.utils.fadeIn(gameOverLabel, 0, gameState);
+        game.utils.fadeIn(retryButton, 0, gameState);
+        game.time.events.add(Phaser.Timer.SECOND * 0.5, gameState.retryEnableInput, gameState);
 
 
     },
     retryEnableInput: function() {
-        this.retry.events.onInputDown.addOnce(this.gameReload, this);
-        this.enterKey.onDown.add(this.gameReload, this);
-
-
-
+        retryButton.events.onInputDown.addOnce(gameState.gameReload, gameState);
+        enterKey.onDown.add(gameState.gameReload, gameState);
     },
 
     gameReload: function() {
 
-        var gameAjaxData = {
-            game: this.game.init.gameId,
+        var reloadData = {
+            game: game.init.gameId,
             plays: 1
         };
 
-        this.ajaxPut(gameAjaxData, '/api/stats');
+        gameState.ajaxPut(reloadData, '/api/stats');
 
 
-        this.game.init.gameInit = false;
-        this.game.init.gameOver = false;
-        this.game.init.score = 0;
-        this.game.init.levelIndex = 0;
+        game.init.gameInit = false;
+        game.init.gameOver = false;
+        game.init.score = 0;
+        game.init.levelIndex = 0;
 
-        this.game.init.ajax = true; //activates gameover only once
+        game.init.ajax = true; //activates gameover only once
 
-        this.state.restart(true, false);
+        gameState.state.restart(true, false);
 
 
     },
 
     carAccelerates: function(sprite) {
-        sprite.body.velocity.x = this.game.init.carPedal();
+        sprite.body.velocity.x = game.init.carPedal();
     },
 
     ajaxPut: function(data, url) {
@@ -440,7 +453,7 @@ Game.prototype = {
 
         //console.log(data);
 
-        this.game.init.ajax = false;
+        game.init.ajax = false;
 
     },
 
@@ -451,14 +464,12 @@ Game.prototype = {
         var request = new XMLHttpRequest();
         request.open('GET', url, true);
 
-        var _this = this; //to be able to call this from inside function
-
         request.onload = function() {
             if (request.status >= 200 && request.status < 400) {
                 // Success!
                 var resp = JSON.parse(request.responseText);
                 for (var i = 0; i < resp.length; i++) {
-                    _this.checkHighscore(resp[i].highscore.score);
+                    gameState.checkHighscore(resp[i].highscore.score);
                 }
 
             } else {
@@ -475,22 +486,20 @@ Game.prototype = {
 
     },
     fadeInNewLevel: function() {
-        if (this.game.init.gameOver === false) {
-            var levelString = 'lv' + (this.game.init.levelIndex + 1);
-            var floorString = 'floor' + (this.game.init.levelIndex + 1);
+        if (game.init.gameOver === false) {
 
-            this.level.loadTexture(levelString);
-            this.floor.loadTexture(floorString);
+            level.loadTexture('lv' + (game.init.levelIndex + 1));
+            floor.loadTexture('floor' + (game.init.levelIndex + 1));
 
-            this.game.utils.fadeIn(this.level, 0, this);
-            this.game.utils.fadeIn(this.floor, 0, this);
+            game.utils.fadeIn(level, 0, gameState);
+            game.utils.fadeIn(floor, 0, gameState);
         }
     },
     checkHighscore: function(score) {
 
         //checks highscores and compares them with my score
 
-        if (this.game.init.score > score) {
+        if (game.init.score > score) {
             console.log('new record!');
         }
 
@@ -499,15 +508,17 @@ Game.prototype = {
 };
 
 Game.prototype.startSong = function() {
-    this.themesong.loopFull(0.5);
+    themeSong.loopFull(0.5);
 };
+
+module.exports = Game;
 },{}],5:[function(require,module,exports){
 'use strict';
 
 var Menu = function() {};
 
-//state
-var menuState;
+//state and shortcuts
+var menuState, game, add;
 
 //sprites, audio and events
 var menuBg, title, miniLogo, themeSong, enterKey;
@@ -517,9 +528,11 @@ Menu.prototype = {
 
     create: function() {
 
+        //variables
         menuState = this;
-        var add = menuState.add;
-        var game = menuState.game;
+        game = menuState.game;
+        add = menuState.add;
+
 
         //creates menu background
         menuState.stage.backgroundColor = 0x323333;
@@ -578,14 +591,21 @@ module.exports = Menu;
 },{}],6:[function(require,module,exports){
 'use strict';
 
+//state and shortcuts
+var preloaderState, game, load, add;
+
+//sprites, audio and events
+var fridgeBingeLogo, progressBar;
+
 var Preloader = function() {};
 
 Preloader.prototype = {
 
     preload: function() {
 
-        var preloaderState = this;
-        var load = preloaderState.load;
+        //variables
+        preloaderState = this;
+        load = preloaderState.load;
 
         //set background logo and progress bar
         preloaderState.setProgressLogo();
@@ -631,17 +651,17 @@ Preloader.prototype = {
 //CUSTOM METHODS (for modularity)
 Preloader.prototype.setProgressLogo = function() {
     
-    var game = this.game;
-    var load = this.load;
-    var add = this.add;
+    //variables
+    game = preloaderState.game;
+    add = preloaderState.add;
 
-    //place logo and asset
-    var progressBar = add.sprite((game.init.gameWidth() / 2) - 110, (game.init.gameHeight() / 2), 'preloader');
-    progressBar.cropEnabled = false;
-
-    var fridgeBingeLogo = add.tileSprite((game.init.gameWidth() / 2) - 90, (game.init.gameHeight() / 2) - 90, 30, 11, 'fblogo');
+    //place logo and progress bar
+    fridgeBingeLogo = add.tileSprite((game.init.gameWidth() / 2) - 90, (game.init.gameHeight() / 2) - 90, 30, 11, 'fblogo');
     fridgeBingeLogo.scale.x = 6;
     fridgeBingeLogo.scale.y = 6;
+
+    progressBar = add.sprite((game.init.gameWidth() / 2) - 110, (game.init.gameHeight() / 2), 'preloader');
+    progressBar.cropEnabled = false;
 
     //loads progress bar
     load.setPreloadSprite(progressBar);
@@ -649,7 +669,6 @@ Preloader.prototype.setProgressLogo = function() {
 };
 
 Preloader.prototype.onLoadComplete = function() {
-    var preloaderState = this;
     preloaderState.state.start('Menu');
 };
 
