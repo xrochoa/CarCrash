@@ -14,9 +14,9 @@ module.exports = {
     score: 0,
     levelIndex: 0,
 
-    nextLevel: [10, 100, 1000],
+    nextLevel: [1, 3, 5],
 
-    win: 10000,
+    win: 9,
 
     //network
     gameId: 'CarCrash',

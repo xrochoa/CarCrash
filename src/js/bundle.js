@@ -1,6 +1,49 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
 
+var state, game, add, physics;
+
+var Player = function(state, x, y, frame, key) {
+    state = state;
+    game = state.game;
+    add = state.add;
+    physics = state.physics;
+
+    Phaser.Sprite.call(this, game, x, y, frame, key); //creates new sprite
+    add.existing(this); //adds sprite to state
+
+    //initialize
+    this.animations.add('explode', [1, 2, 3, 4, 5, 6], 10, false).killOnComplete = true;
+    physics.arcade.enable(this);
+    this.scale.x = game.init.pixelScale;
+    this.scale.y = game.init.pixelScale;
+};
+
+Player.prototype = Object.create(Phaser.Sprite.prototype); //inherits properties and functions from Sprite object
+Player.prototype.constructor = Player; //sets a reference to the class that will create new objects
+
+Player.prototype.moveUp = function() {
+    this.accelerate();
+    add.tween(this).to({
+        y: game.init.lanes()[0]
+    }, 300, Phaser.Easing.Sinusoidal.InOut, true, 0);
+};
+
+Player.prototype.moveDown = function() {
+    this.accelerate();
+    add.tween(this).to({
+        y: game.init.lanes()[1]
+    }, 300, Phaser.Easing.Sinusoidal.InOut, true, 0);
+};
+
+Player.prototype.accelerate = function() {
+    this.body.velocity.x = game.init.carPedal();
+};
+
+module.exports = Player;
+},{}],2:[function(require,module,exports){
+'use strict';
+
 (function() {
 
     //DEPENDENCIES
@@ -43,7 +86,7 @@
     game.state.start('Boot');
 
 })();
-},{"./init.js":2,"./states/boot.js":3,"./states/game.js":4,"./states/menu.js":5,"./states/preloader.js":6,"./states/win.js":7,"./utils.js":8}],2:[function(require,module,exports){
+},{"./init.js":3,"./states/boot.js":4,"./states/game.js":5,"./states/menu.js":6,"./states/preloader.js":7,"./states/win.js":8,"./utils.js":9}],3:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -60,9 +103,9 @@ module.exports = {
     score: 0,
     levelIndex: 0,
 
-    nextLevel: [10, 100, 1000],
+    nextLevel: [1, 3, 5],
 
-    win: 10000,
+    win: 9,
 
     //network
     gameId: 'CarCrash',
@@ -102,7 +145,7 @@ module.exports = {
 
 };
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 'use strict';
 
 //state and shortcuts
@@ -135,10 +178,10 @@ Boot.prototype = {
             scale.refresh();
         } else {
             scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
-            scale.minWidth = 480;
-            scale.minHeight = 260;
-            scale.maxWidth = 640;
-            scale.maxHeight = 480;
+            scale.minWidth = window.innerHeight / 1.5;
+            scale.minHeight = window.innerHeight;
+            scale.maxWidth = window.innerHeight / 1.5;
+            scale.maxHeight = window.innerHeight;
             scale.forceLandscape = true;
             scale.pageAlignHorizontally = true;
         }
@@ -149,7 +192,7 @@ Boot.prototype = {
 };
 
 module.exports = Boot;
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 'use strict';
 
 //state and shortcuts
@@ -160,8 +203,8 @@ var cursors, enterKey, background, level, floor, road, truckGroup,
     truck, player, enemyGroup, enemy, scoreLabel, gameOverLabel,
     retryButton, themeSong;
 
-//ajax
-var winData, looseData, reloadData;
+//external dependencies
+var Player = require('../entities/player.js');
 
 var Game = function() {};
 
@@ -176,9 +219,6 @@ Game.prototype = {
         add = gameState.add;
         physics = gameState.physics;
 
-
-        console.log(this);
-
         //enable the Arcade Physics system
         physics.startSystem(Phaser.Physics.ARCADE);
 
@@ -186,333 +226,298 @@ Game.prototype = {
         cursors = keyboard.createCursorKeys();
         enterKey = keyboard.addKey(Phaser.Keyboard.ENTER);
 
+        //color background
         game.stage.backgroundColor = 0xff5040;
 
         //background
         background = add.sprite(0, 0, 'bground');
-        gameState.scaleSprite(background);
+        background.scale.setTo(this.game.init.pixelScale, this.game.init.pixelScale);
 
         //level 1
         level = add.tileSprite(0, 0, 30, 60 * game.init.pixelScale, 'lv1');
-        gameState.scaleSprite(level);
+        level.scale.setTo(this.game.init.pixelScale, this.game.init.pixelScale);
 
         //floor1
         floor = add.tileSprite(0, 45 * game.init.pixelScale, 30, 15, 'floor1');
-        gameState.scaleSprite(floor);
+        floor.scale.setTo(this.game.init.pixelScale, this.game.init.pixelScale);
 
         //road
         road = add.tileSprite(0, 34 * game.init.pixelScale, 30, 13, 'road');
-        gameState.scaleSprite(road);
+        road.scale.setTo(this.game.init.pixelScale, this.game.init.pixelScale);
 
         //trucks
         truckGroup = add.group();
         truckGroup.enableBody = true;
-
-        //adds physics to each member
         physics.arcade.enable(truckGroup);
         for (var i = 0; i < 2; i++) {
             truck = truckGroup.create(-9 * game.init.pixelScale, game.init.lanes()[i], 'truck');
-            gameState.scaleSprite(truck);
+            truck.scale.setTo(game.init.pixelScale, game.init.pixelScale);
         }
-
-        //player = blue car
-        player = add.sprite(5 * game.init.pixelScale, 36 * game.init.pixelScale, 'car');
-        player.animations.add('explode', [1, 2, 3, 4, 5, 6], 10, false).killOnComplete = true;
-        gameState.scaleSprite(player);
-        physics.arcade.enable(player);
 
         //enemy = red cars
         enemyGroup = add.group();
         enemyGroup.enableBody = true;
-
-        //adds physics to each member
         physics.arcade.enable(enemyGroup);
         for (var i = 0; i < 2; i++) {
             enemy = enemyGroup.create(30 * game.init.pixelScale * (1 + i), game.init.lanes()[i], 'enemy');
+            enemy.scale.setTo(game.init.pixelScale, game.init.pixelScale);
             enemy.animations.add('explodeRed', [1, 2, 3, 4, 5, 6], 10, false).killOnComplete = true;
-            gameState.scaleSprite(enemy);
-
         }
+
+        //player = blue car
+        player = new Player(gameState, 5 * game.init.pixelScale, 36 * game.init.pixelScale, 'car');
 
         //score label
         scoreLabel = add.bitmapText(0, 5 * game.init.pixelScale, 'litto', 0, game.init.pixelScale);
 
-
         //gameover label
         gameOverLabel = add.sprite(5 * game.init.pixelScale, 15 * game.init.pixelScale, 'over');
-        gameState.scaleSprite(gameOverLabel);
+        gameOverLabel.scale.setTo(this.game.init.pixelScale, this.game.init.pixelScale);
         gameOverLabel.alpha = 0;
 
         //retry button
         retryButton = add.button(9 * game.init.pixelScale, 35 * game.init.pixelScale, 'retry');
-        gameState.scaleSprite(retryButton);
+        retryButton.scale.setTo(this.game.init.pixelScale, this.game.init.pixelScale);
         retryButton.alpha = 0;
 
-        //loads and starts song
+        //song
         themeSong = add.audio('themeSong');
         gameState.sound.setDecodedCallback(themeSong, gameState.startSong, gameState);
-
 
     },
 
     update: function() {
-        //backckground movement
-        game.utils.tileAnimation(level, game.init.gameSpeedSlowest());
-        game.utils.tileAnimation(floor, game.init.gameSpeed);
-        game.utils.tileAnimation(road, game.init.gameSpeedSlower());
+
+        //animate background
+        gameState.animateBackground();
 
 
-        //first click game start
+        //first click/enter starts game
         if ((game.init.gameInit === false) && (cursors.down.isDown || cursors.up.isDown || game.input.activePointer.isDown)) {
             gameState.gameStart();
         }
 
-        //when level changes
+        //next level
         if (game.init.nextLevel[game.init.levelIndex] === game.init.score) {
-            //fadeOut animation
-            background.frame = game.init.levelIndex + 1;
-            game.utils.fadeOut(level, 0, gameState);
-            game.utils.fadeOut(floor, 0, gameState);
-            game.init.levelIndex++;
-            //fadeIn animation
-            game.time.events.add(Phaser.Timer.SECOND * 1, gameState.fadeInNewLevel, gameState);
+            gameState.newLevelStart();
         }
 
-        //game win
-        if (game.init.score === game.init.win) {
-            winData = {
-                game: game.init.gameId,
-                wins: 1
-            };
-
-            gameState.ajaxPut(winData, '/api/stats');
-
-            themeSong.stop();
-            gameState.state.start('Win');
-
-        }
-
-        //triggers game over
+        //game over
         if (game.init.gameOver === true && game.init.ajax === true) {
-            themeSong.stop();
             gameState.gameOver();
         };
 
-        //car movement with click or mouse
-        if ((cursors.up.isDown || (game.input.activePointer.isDown && game.input.activePointer.position.y < game.init.lanes()[2])) && ((player.y === game.init.lanes()[0]) || (player.y === game.init.lanes()[1]))) {
-            gameState.carMoveUp();
-        } else if (
-            (cursors.down.isDown || (game.input.activePointer.isDown && game.input.activePointer.position.y > game.init.lanes()[2])) && ((player.y === game.init.lanes()[0]) || (player.y === game.init.lanes()[1]))) {
-            gameState.carMoveDown();
+        //game win
+        if (game.init.score === game.init.win) {
+            gameState.gameWin();
         }
 
-        //enemy world bound recycle and score
-        enemyGroup.forEach(
+        //PLAYER EVENTS
+        //car movement with click or mouse
+        if ((cursors.up.isDown || (game.input.activePointer.isDown && game.input.activePointer.position.y < game.init.lanes()[2])) && ((player.y === game.init.lanes()[0]) || (player.y === game.init.lanes()[1]))) {
+            player.moveUp();
+        } else if (
+            (cursors.down.isDown || (game.input.activePointer.isDown && game.input.activePointer.position.y > game.init.lanes()[2])) && ((player.y === game.init.lanes()[0]) || (player.y === game.init.lanes()[1]))) {
+            player.moveDown();
+        }
 
+        //ENEMY RECYCLE -> INCREASE SCORE -> UPDATE SCORE LABEL
+        gameState.enemyScoreUpdate();
 
-            function(enemy) {
-                if (enemy.x <= -5 * game.init.pixelScale && (game.init.gameOver === false)) {
-                    enemy.y = game.init.lanes()[0] + (game.init.lanes()[1] - game.init.lanes()[0]) * game.rnd.integerInRange(0, 1);
-                    enemy.x = 60 * game.init.pixelScale;
-                    game.init.score++;
-                }
-            }
-        );
-
-        //temporary score label
-        scoreLabel.text = game.init.score;
-        scoreLabel.x = ((30 * game.init.pixelScale) - scoreLabel.width) / 2;
-
-
-        //truck collide action
-        physics.arcade.overlap(player, truckGroup, gameState.truckExplode, null, gameState);
-
-        //enemy collide action
-        physics.arcade.overlap(player, enemyGroup, gameState.carExplode, null, gameState);
-
-        //enemy collide with truck
-        physics.arcade.overlap(truck, enemyGroup, gameState.enemyExplode, null, gameState);
+        //COLLISIONS
+        //playerEnemyCollisionssssssssssssssssssssssssssssssss
+        physics.arcade.overlap(player, enemyGroup, gameState.playerEnemyCollision);
+        //playerTruckCollision
+        physics.arcade.overlap(player, truckGroup, gameState.playerTruckCollision);
+        //enemyTruckCollision
+        physics.arcade.overlap(truckGroup, enemyGroup, gameState.enemyTruckCollision);
 
     },
 
     render: function() {
         //console.log(init.fadeInLevel, this.game.init.levelIndex);
         //console.log(init.highscore);
-    },
-
-    carMoveUp: function() {
-        gameState.carAccelerates(player);
-        add.tween(player).to({
-            y: game.init.lanes()[0]
-        }, 300, Phaser.Easing.Sinusoidal.InOut, true, 0);
-    },
-    carMoveDown: function() {
-        gameState.carAccelerates(player);
-        add.tween(player).to({
-            y: game.init.lanes()[1]
-        }, 300, Phaser.Easing.Sinusoidal.InOut, true, 0);
-    },
-
-    //first and second objects are passed in order from overlap
-    carExplode: function(player, enemy) {
-        player.animations.play('explode');
-        enemy.animations.play('explodeRed');
-        game.init.gameOver = true;
-    },
-
-    truckExplode: function(player, truck) {
-        gameState.carAccelerates(player);
-        player.animations.play('explode');
-        truck.body.velocity.x = game.init.enemySpeed;
-        game.init.gameOver = true;
-
-    },
-
-    enemyExplode: function(truck, enemy) {
-        //only destroys if truck is moving
-        if (truck.body.velocity.x === game.init.enemySpeed) {
-            enemy.animations.play('explodeRed');
-            gameState.carAccelerates(enemy);
-        }
-    },
-
-    scaleSprite: function(sprite) {
-        sprite.scale.x = this.game.init.pixelScale;
-        sprite.scale.y = this.game.init.pixelScale;
-    },
-
-    gameStart: function() {
-        player.body.gravity.x = game.init.gravity();
-        //speed for all in group
-        enemyGroup.setAll('body.velocity.x', -game.init.enemySpeed);
-        game.init.gameInit = true;
-
-    },
-
-    gameOver: function() {
-        //add highest score
-        if (game.init.score > game.init.highscore) {
-            game.init.highscore = game.init.score;
-        }
-
-        var looseData = {
-            game: game.init.gameId,
-            highscore: game.init.highscore,
-            level: game.init.level
-        };
-
-        gameState.ajaxPut(looseData, '/api/stats');
-        gameState.ajaxGet('/api/highscores');
-
-        game.utils.fadeOut(background, 0, gameState);
-        game.utils.fadeOut(level, 0, gameState);
-        game.utils.fadeOut(floor, 0, gameState);
-        game.utils.fadeIn(gameOverLabel, 0, gameState);
-        game.utils.fadeIn(retryButton, 0, gameState);
-        game.time.events.add(Phaser.Timer.SECOND * 0.5, gameState.retryEnableInput, gameState);
-
-
-    },
-    retryEnableInput: function() {
-        retryButton.events.onInputDown.addOnce(gameState.gameReload, gameState);
-        enterKey.onDown.add(gameState.gameReload, gameState);
-    },
-
-    gameReload: function() {
-
-        var reloadData = {
-            game: game.init.gameId,
-            plays: 1
-        };
-
-        gameState.ajaxPut(reloadData, '/api/stats');
-
-
-        game.init.gameInit = false;
-        game.init.gameOver = false;
-        game.init.score = 0;
-        game.init.levelIndex = 0;
-
-        game.init.ajax = true; //activates gameover only once
-
-        gameState.state.restart(true, false);
-
-
-    },
-
-    carAccelerates: function(sprite) {
-        sprite.body.velocity.x = game.init.carPedal();
-    },
-
-    ajaxPut: function(data, url) {
-
-        var request = new XMLHttpRequest();
-        request.open('PUT', url, true);
-        request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-        request.send(JSON.stringify(data));
-
-        //console.log(data);
-
-        game.init.ajax = false;
-
-    },
-
-    ajaxGet: function(url) {
-
-        //loads highscores to compare them with my score
-
-        var request = new XMLHttpRequest();
-        request.open('GET', url, true);
-
-        request.onload = function() {
-            if (request.status >= 200 && request.status < 400) {
-                // Success!
-                var resp = JSON.parse(request.responseText);
-                for (var i = 0; i < resp.length; i++) {
-                    gameState.checkHighscore(resp[i].highscore.score);
-                }
-
-            } else {
-                console.log('We reached our target server, but it returned an error.');
-
-            }
-        };
-
-        request.onerror = function() {
-            console.log('There was a connection error of some sort.');
-        };
-
-        request.send();
-
-    },
-    fadeInNewLevel: function() {
-        if (game.init.gameOver === false) {
-
-            level.loadTexture('lv' + (game.init.levelIndex + 1));
-            floor.loadTexture('floor' + (game.init.levelIndex + 1));
-
-            game.utils.fadeIn(level, 0, gameState);
-            game.utils.fadeIn(floor, 0, gameState);
-        }
-    },
-    checkHighscore: function(score) {
-
-        //checks highscores and compares them with my score
-
-        if (game.init.score > score) {
-            console.log('new record!');
-        }
-
     }
 
+};
+
+//CUSTOM METHODS
+
+//GAME START - GAME OVER - RETRY
+
+Game.prototype.gameStart = function() {
+    //player and enemy move
+    player.body.gravity.x = game.init.gravity();
+    enemyGroup.setAll('body.velocity.x', -game.init.enemySpeed); //speed for all in group
+    //game start
+    game.init.gameInit = true;
+
+};
+
+Game.prototype.gameOver = function() {
+    //save highest score in init data
+    if (game.init.score > game.init.highscore) {
+        game.init.highscore = game.init.score;
+    }
+
+    //ajax loose
+    game.utils.ajax.loose(game);
+    game.init.ajax = false;
+
+    //stop music
+    themeSong.stop();
+
+    //animations
+    game.utils.fadeOut(background, 0, gameState);
+    game.utils.fadeOut(level, 0, gameState);
+    game.utils.fadeOut(floor, 0, gameState);
+    game.utils.fadeIn(gameOverLabel, 0, gameState);
+    game.utils.fadeIn(retryButton, 0, gameState);
+
+    //enable retry button after half a second
+    game.time.events.add(Phaser.Timer.SECOND * 0.5, function() {
+        retryButton.events.onInputDown.addOnce(gameState.gameRetry, gameState);
+        enterKey.onDown.add(gameState.gameRetry, gameState);
+    });
+
+};
+
+Game.prototype.gameRetry = function() {
+
+    //ajax retry
+    game.utils.ajax.retry(game);
+    game.init.ajax = false;
+
+
+    //initialize level again
+    game.init.gameInit = false;
+    game.init.gameOver = false;
+    game.init.score = 0;
+    game.init.levelIndex = 0;
+
+    game.init.ajax = true; //activates gameover only once
+
+    gameState.state.restart(true, false);
+
+
+};
+
+Game.prototype.gameWin = function() {
+
+    //ajax win
+    game.utils.ajax.win(game);
+    game.init.ajax = false;
+
+    //stop song
+    themeSong.stop();
+    //load win state
+    gameState.state.start('Win');
+}
+
+//COLLISIONS
+
+Game.prototype.playerEnemyCollision = function(sprite, groupSprite) {
+    //animation
+    sprite.animations.play('explode');
+    groupSprite.animations.play('explodeRed');
+    //game over
+    game.init.gameOver = true;
+};
+
+Game.prototype.playerTruckCollision = function(sprite, groupSprite) {
+    //animation
+    sprite.accelerate();
+    sprite.animations.play('explode');
+    groupSprite.body.velocity.x = game.init.enemySpeed;
+    //game over
+    game.init.gameOver = true;
+};
+
+Game.prototype.enemyTruckCollision = function(truck, enemy) {
+    //only destroys if truck is on screen
+    if (truck.x >= 0) {
+        //animation
+        enemy.body.velocity.x = game.init.carPedal();
+        enemy.animations.play('explodeRed');
+    }
+};
+
+
+//AJAX
+
+Game.prototype.ajaxPut = function(data, url) {};
+
+Game.prototype.ajaxGet = function(url) {
+
+
+};
+
+//ANIMATIONS
+
+Game.prototype.animateBackground = function() {
+    game.utils.tileAnimation(level, game.init.gameSpeedSlowest());
+    game.utils.tileAnimation(floor, game.init.gameSpeed);
+    game.utils.tileAnimation(road, game.init.gameSpeedSlower());
+};
+
+Game.prototype.newLevelStart = function() {
+    //fadeOut animation
+    background.frame = game.init.levelIndex + 1;
+    game.utils.fadeOut(level, 0, gameState);
+    game.utils.fadeOut(floor, 0, gameState);
+    //increase level index
+    game.init.levelIndex++;
+    //fadeIn animation
+    game.time.events.add(Phaser.Timer.SECOND * 1, gameState.newLevelEnd, gameState);
+};
+
+
+Game.prototype.newLevelEnd = function() {
+    //if game is not over
+    if (game.init.gameOver === false) {
+        //load textures and fadein animations
+        level.loadTexture('lv' + (game.init.levelIndex + 1));
+        floor.loadTexture('floor' + (game.init.levelIndex + 1));
+        game.utils.fadeIn(level, 0, gameState);
+        game.utils.fadeIn(floor, 0, gameState);
+    }
+};
+
+//OTHER
+
+Game.prototype.enemyScoreUpdate = function() {
+    //enemy world bound recycle
+    enemyGroup.forEach(function(enemy) {
+
+        if (enemy.x <= -5 * game.init.pixelScale && (game.init.gameOver === false)) {
+            enemy.y = game.init.lanes()[0] + (game.init.lanes()[1] - game.init.lanes()[0]) * game.rnd.integerInRange(0, 1);
+            enemy.x = 60 * game.init.pixelScale;
+            game.init.score++;
+        }
+
+    });
+
+    //update score label
+    scoreLabel.text = game.init.score;
+    scoreLabel.x = ((30 * game.init.pixelScale) - scoreLabel.width) / 2;
+
+};
+
+Game.prototype.checkHighscore = function(score) {
+    //checks highscores and compares them with my score
+    if (game.init.score > score) {
+        console.log('new record!');
+    }
 };
 
 Game.prototype.startSong = function() {
     themeSong.loopFull(0.5);
 };
 
+
+
 module.exports = Game;
-},{}],5:[function(require,module,exports){
+},{"../entities/player.js":1}],6:[function(require,module,exports){
 'use strict';
 
 var Menu = function() {};
@@ -588,7 +593,7 @@ Menu.prototype.startSong = function() {
 };
 
 module.exports = Menu;
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 'use strict';
 
 //state and shortcuts
@@ -673,7 +678,7 @@ Preloader.prototype.onLoadComplete = function() {
 };
 
 module.exports = Preloader;
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 'use strict';
 
 var Win = function() {};
@@ -713,7 +718,7 @@ Win.prototype.scaleSprite = function(sprite) {
 };
 
 module.exports = Win;
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 'use strict';
 
 var utils = {
@@ -735,5 +740,92 @@ var utils = {
 
 };
 
+utils.ajax = {
+
+    get: function(url, game) {
+
+        var request = new XMLHttpRequest();
+        request.open('GET', url, true);
+
+        request.onload = function() {
+            if (request.status >= 200 && request.status < 400) {
+                //on success
+                var resp = JSON.parse(request.responseText);
+
+                //api sanity check
+                console.log('getData', resp);
+
+                for (var i = 0; i < resp.length; i++) {
+                    if (game.init.score > resp[i].highscore.score) {
+                        console.log('new highscore table record!');
+                    }
+                }
+            } else {
+                //on failure
+                console.log('We reached our target server, but it returned an error.');
+            }
+        };
+
+        request.onerror = function() {
+            console.log('There was a connection error of some sort.');
+        };
+
+        //sends request
+        request.send();
+
+    },
+
+    put: function(data, url) {
+
+        var request = new XMLHttpRequest();
+        request.open('PUT', url, true);
+        request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+
+        //sends request
+        request.send(JSON.stringify(data));
+
+    },
+
+    loose: function(game) {
+        //ajax loose data (gameId, highestScore, highestLevel)
+        var looseData = {
+            game: game.init.gameId,
+            highscore: game.init.highscore,
+            level: game.init.level
+        };
+        this.put(looseData, '/api/stats');
+        this.get('/api/highscores', game);
+
+        //api sanity check
+        console.log('loosedata', looseData);
+    },
+
+    retry: function(game) {
+        //ajax retry data (gameId and 1 new play)
+        var retryData = {
+            game: game.init.gameId,
+            plays: 1
+        };
+        this.put(retryData, '/api/stats');
+
+        //api sanity check
+        console.log('retryData', retryData);
+    },
+
+    win: function(game) {
+        //ajax win data (gameId and 1 new win)
+        var winData = {
+            game: game.init.gameId,
+            wins: 1
+        };
+        this.put(winData, '/api/stats');
+
+        //api sanity check
+        console.log('winData', winData);
+    }
+};
+
+
+
 module.exports = utils; //ended up looking cleaner than a class
-},{}]},{},[1])
+},{}]},{},[2])

@@ -30,10 +30,10 @@ Boot.prototype = {
             scale.refresh();
         } else {
             scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
-            scale.minWidth = 480;
-            scale.minHeight = 260;
-            scale.maxWidth = 640;
-            scale.maxHeight = 480;
+            scale.minWidth = window.innerHeight / 1.5;
+            scale.minHeight = window.innerHeight;
+            scale.maxWidth = window.innerHeight / 1.5;
+            scale.maxHeight = window.innerHeight;
             scale.forceLandscape = true;
             scale.pageAlignHorizontally = true;
         }
