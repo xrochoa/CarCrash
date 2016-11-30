@@ -29,7 +29,7 @@ Boot.prototype = {
             scale.pageAlignVertically = true;
             scale.refresh();
         } else {
-            scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+            scale.scaleMode = Phaser.ScaleManager.EXACT_FIT;
             scale.minWidth = window.innerHeight / 1.5;
             scale.minHeight = window.innerHeight;
             scale.maxWidth = window.innerHeight / 1.5;
@@ -37,6 +37,9 @@ Boot.prototype = {
             scale.forceLandscape = true;
             scale.pageAlignHorizontally = true;
         }
+
+        //game.scale.fullScreenScaleMode = Phaser.ScaleManager.EXACT_FIT;
+        //game.scale.startFullScreen(true);
 
         bootState.state.start('Preloader');
 
