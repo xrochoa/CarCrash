@@ -1,105 +1,176 @@
+// Installer
+//yarn add --dev --exact gulp gulp-imagemin gulp-htmlmin gulp-sass gulp-autoprefixer gulp-clean-css gulp-jshint jshint gulp-uglify del run-sequence browser-sync gulp-typescript imagemin-gifsicle imagemin-jpegtran imagemin-optipng imagemin-svgo gulp-include
+
+
+
+/*----------  GULP FOR AN ANGULAR 2 APP  ----------*/
+
 'use strict';
 
 // GULP
 var gulp = require('gulp');
 
 // PLUGINS
-//js
-var jshint = require('gulp-jshint');
-var browserify = require('gulp-browserify');
-var uglify = require('gulp-uglify');
 //img
 var imagemin = require('gulp-imagemin');
+
 //html
-var cdnizer = require("gulp-cdnizer");
-//server
-var nodemon = require('gulp-nodemon');
-var livereload = require('gulp-livereload');
+var htmlmin = require('gulp-htmlmin');
+
+
+//css
+var sass = require('gulp-sass'),
+    autoprefixer = require('gulp-autoprefixer'),
+    cleanCSS = require('gulp-clean-css');
+
+//js
+var jshint = require('gulp-jshint'),
+    typeScript = require('gulp-typescript'),
+    include = require('gulp-include'),
+    uglify = require('gulp-uglify');
+
+
 //utils
-var concat = require('gulp-concat');
-var rename = require('gulp-rename');
-var clean = require('gulp-clean');
-var runSequence = require('run-sequence');
+var del = require('del'),
+    runSequence = require('run-sequence'),
+    sourcemaps = require('gulp-sourcemaps');
+
+// Allows module reloading require project name
+require.reload = function reload(path) {
+    delete require.cache[require.resolve(path)];
+    return require(path);
+};
+
+//server
+var browserSync = require('browser-sync').create(),
+    historyApiFallback = require('connect-history-api-fallback');
 
 
-//Clean folders before tasks
+/*----------  CONFIGURATION  ----------*/
+
+//const typeScriptConfig = require('./tsconfig.json');
+
+const autoprefixerConfig = {
+    browsers: [
+        "Android 2.3",
+        "Android >= 4",
+        "Chrome >= 20",
+        "Firefox >= 24",
+        "Explorer >= 8",
+        "iOS >= 6",
+        "Opera >= 12",
+        "Safari >= 6"
+    ],
+    cascade: false
+};
+
+const cleanCSSConfig = { compatibility: 'ie8' };
+
+const gameCode = 'carcrash';
+
+/*----------  TASKS  ----------*/
+
+/*
+CLEAN
+*/
+
+//Clean dist folder before tasks
 gulp.task('clean', function() {
-    return gulp.src(['dist/*'], {
-            read: false
-        })
-        .pipe(clean());
+    return del(['dist/*']);
 });
 
-//Lint Javascript
-gulp.task('lintjs', function() {
-    return gulp.src('src/js/app/**/*.js')
-        .pipe(jshint({
-            "browserify": true
-        }))
-        .pipe(jshint.reporter('default'));
+/*
+RESOURCES
+*/
+
+//Copy all files from resources
+gulp.task('res', function() {
+    return gulp.src('./src/assets/res/**/*')
+        .pipe(gulp.dest(`./dist/games/${gameCode}/assets/res`))
+        .pipe(browserSync.stream());
 });
 
-//Browserify and Minify Javascript
-gulp.task('bundlejs', function() {
-    return gulp.src('src/js/app/app.js')
-        .pipe(browserify())
-        .pipe(rename(function(path) {
-            path.basename = "bundle";
-        }))
-        .pipe(gulp.dest('src/js')) //bundles at source
-        .pipe(uglify())
-        .pipe(rename(function(path) {
-            path.basename += ".min";
-        }))
-        .pipe(gulp.dest('dist/js'))
-        .pipe(livereload());
+
+/*
+HTML
+*/
+
+//Minify html
+gulp.task('html', function() {
+    return gulp.src('./src/**/*.html')
+        //.pipe(htmlmin({ collapseWhitespace: true })) //check options for angular
+        .pipe(gulp.dest('./dist'))
+        .pipe(browserSync.stream());
+
 });
 
-//Minify images
+/*
+IMAGES
+*/
+
+//Minify png, jpg, gif and svg images
 gulp.task('img', function() {
-    return gulp.src('src/assets/**/*')
+    return gulp.src('./src/assets/**/img/**/*')
         .pipe(imagemin({
             progressive: true,
-            svgoPlugins: [{
-                removeViewBox: false
-            }]
+            svgoPlugins: [{ removeViewBox: false }]
         }))
-        .pipe(gulp.dest('dist/assets'))
-        .pipe(livereload());
+        .pipe(gulp.dest(`./dist/games/${gameCode}/assets`))
+        .pipe(browserSync.stream());
 });
 
-//Replaces local links with CDNs and minify html
-gulp.task('html', function() {
-    return gulp.src('src/**/*.html')
-        .pipe(cdnizer([{
-            file: 'phaser/build/phaser.js',
-            package: 'phaser',
-            cdn: 'https://cdnjs.cloudflare.com/ajax/libs/phaser/${ version }/phaser.min.js'
-        }, {
-            file: 'js/bundle.js',
-            cdn: 'js/bundle.min.js'
-        }]))
-        .pipe(gulp.dest("dist"))
-        .pipe(livereload());
 
+/*
+JAVASCRIPT
+*/
+
+
+
+//Lint, bundle, minify javascript in assets (with sourcemaps)
+gulp.task('js', function() {
+    return gulp.src('./src/main.js')
+        .pipe(sourcemaps.init())
+        .pipe(jshint())
+        .pipe(jshint.reporter('default'))
+        .pipe(include())
+        .pipe(uglify())
+        .pipe(gulp.dest(`./dist/games/${gameCode}`))
+        .pipe(sourcemaps.write())
+        .pipe(browserSync.stream());
 });
+
+
+/*
+WATCH - DEFAULT
+*/
 
 //Watches Files For Changes
 gulp.task('watch', function() {
-    livereload.listen();
-    gulp.watch('src/js/app/**/*.js', ['lintjs', 'bundlejs']);
-    gulp.watch('src/**/*.html', ['html']);
-    gulp.watch('src/assets/**/*', ['img']);
+
+    browserSync.init({
+        server: {
+            baseDir: ['dist'],
+            middleware: [historyApiFallback()] //allows SPA behaviour always serving index
+        },
+        notify: {
+            styles: {
+                top: 'auto',
+                bottom: '0'
+            }
+        },
+        open: false
+    });
+
+    gulp.watch('./src/**/res/**/*', ['res']).on('change', browserSync.reload);
+    gulp.watch('./src/**/img/**/*', ['img', 'html']).on('change', browserSync.reload);
+    gulp.watch('./src/**/*.html', ['html']).on('change', browserSync.reload);
+    gulp.watch('./src/**/*.js', ['js']).on('change', browserSync.reload);
+
+
 });
 
-//Node server start
-gulp.task('server', function() {
-    nodemon({
-        script: 'server.js'
-    });
-});
 
 // Default Task
 gulp.task('default', function() {
-    runSequence('clean', 'lintjs', 'bundlejs', 'html', 'img', 'watch', 'server');
+    runSequence('clean', 'res', 'img', 'html', 'js', 'watch');
 });

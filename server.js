@@ -5,7 +5,7 @@ var srcApp = express1();
 var distApp = express2();
 
 // Serves source code
-var server1 = srcApp.listen(4000, function() {
+var server1 = srcApp.listen(5000, function() {
     srcApp.use(express1.static(__dirname + '/src'));
     srcApp.use(express1.static(__dirname + '/bower_components'));
     srcApp.use('/api/highscores', function(req, res) {
@@ -18,7 +18,7 @@ var server1 = srcApp.listen(4000, function() {
 });
 
 // Serves distribution code
-var server2 = distApp.listen(8000, function() {
+var server2 = distApp.listen(5001, function() {
     distApp.use('/', express2.static(__dirname + '/dist'));
     distApp.use('/api/highscores', function(req, res) {
         res.json(apiData);

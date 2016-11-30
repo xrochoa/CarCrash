@@ -10,13 +10,49 @@
         margin: 0;
         padding: 0;
     }
+    
+    html {
+        background: -webkit-linear-gradient(top, rgba(50, 50, 51, .9), rgba(76, 251, 206, .9)), url(https://i.ytimg.com/vi/Mx8FFqARb8A/maxresdefault.jpg);
+        background: linear-gradient(to bottom, rgba(50, 50, 51, .9), rgba(76, 251, 206, .9)), url(https://i.ytimg.com/vi/Mx8FFqARb8A/maxresdefault.jpg);
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        display: flex;
+        -ms-flex-direction: column;
+        flex-direction: column;
+        height: 100%;
+    }
+    
+    body {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-family: pixel;
+        color: #f5f9fa;
+        text-align: center;
+    }
+    
+    p {
+        padding: 10px;
+        width: 250px;
+        position: relative;
+        left: 50%;
+        transform: translateX(-50%);
+    }
     </style>
 </head>
 
 <body>
-    <div id="gameDiv"></div>
-    <script src="phaser/build/phaser.js"></script>
-    <script src="js/bundle.js"></script>
+    <div id="phaser-game"></div>
+    <p>Press enter or click to start. Use arrows or click to move.</p>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/systemjs/0.19.40/system.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/2.6.2/phaser.min.js"></script>
+    <script>
+    SystemJS.import('./games/carcrash/main.js').then(function(gameModule) {
+        gameModule();
+    });
+    </script>
 </body>
 
 </html>
