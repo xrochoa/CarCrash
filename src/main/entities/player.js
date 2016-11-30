@@ -22,17 +22,21 @@ Player.prototype = Object.create(window.Phaser.Sprite.prototype); //inherits pro
 Player.prototype.constructor = Player; //sets a reference to the class that will create new objects
 
 Player.prototype.moveUp = function() {
-    this.accelerate();
+    //this.accelerate();
     add.tween(this).to({
         y: game.init.lanes()[0]
     }, 300, window.Phaser.Easing.Sinusoidal.InOut, true, 0);
 };
 
 Player.prototype.moveDown = function() {
-    this.accelerate();
+    //this.accelerate();
     add.tween(this).to({
         y: game.init.lanes()[1]
     }, 300, window.Phaser.Easing.Sinusoidal.InOut, true, 0);
+};
+
+Player.prototype.moveRight = function() {
+    this.accelerate();
 };
 
 Player.prototype.accelerate = function() {

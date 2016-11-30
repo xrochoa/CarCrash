@@ -138,7 +138,8 @@ GameState.prototype = {
 
 
         //first click/enter starts game
-        if ((game.init.gameInit === false) && (cursors.down.isDown || cursors.up.isDown || game.input.activePointer.isDown)) {
+        if ((game.init.gameInit === false) && (cursors.down.isDown || cursors.up.isDown || cursors.right.isDown || cursors.left.isDown || game.input.activePointer.isDown)) {
+            game.utils.ajax.putHttp(game, true, false, 0, function() {}); //dont check top highscore on retry
             gameState.gameStart();
         }
 
@@ -169,8 +170,9 @@ GameState.prototype = {
         } else if (
             (cursors.down.isDown || (game.input.activePointer.isDown && game.input.activePointer.position.y > game.init.lanes()[2])) && ((player.y === game.init.lanes()[0]) || (player.y === game.init.lanes()[1]))) {
             player.moveDown();
+        } else if (cursors.right.isDown) {
+            player.moveRight();
         }
-
         //ENEMY RECYCLE -> INCREASE SCORE -> UPDATE SCORE LABEL
         gameState.enemyScoreUpdate();
 
@@ -235,8 +237,8 @@ GameState.prototype.gameOver = function() {
 GameState.prototype.gameRetry = function() {
 
     //ajax retry
-    game.utils.ajax.putHttp(game, true, false, 0, function() {}); //dont check top highscore on retry
-    game.init.ajax = false;
+    //game.utils.ajax.putHttp(game, true, false, 0, function() {}); //dont check top highscore on retry
+    //game.init.ajax = false;
 
 
     //initialize level again
